@@ -216,6 +216,8 @@ const MapWithGPX: React.FC<MapWithGPXProps> = ({ gpxTracks }) => {
             );
           }
 
+          const elevation = positionCoord.ele;
+
           return (
             <div key={track.id}>
               <Polyline
@@ -234,6 +236,8 @@ const MapWithGPX: React.FC<MapWithGPXProps> = ({ gpxTracks }) => {
                   <Popup>
                     <div>
                       <strong>{track.name}</strong>
+                      <br />
+                      Elevation: {elevation.toFixed(2)} m
                     </div>
                   </Popup>
                 </RotatingMarker>
