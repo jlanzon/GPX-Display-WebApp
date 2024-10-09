@@ -24,6 +24,10 @@ interface GPXTrack {
 function App() {
   const [gpxTracks, setGpxTracks] = useState<GPXTrack[]>([]);
   const [nextTrackId, setNextTrackId] = useState<number>(1);
+  const [currentIndices, setCurrentIndices] = useState<{
+    [key: number]: number;
+  }>({});
+  const [isPlaying, setIsPlaying] = useState<boolean>(false);
 
   // Function to handle file drop
   const handleFileDrop = (event: React.DragEvent<HTMLDivElement>) => {
@@ -128,8 +132,17 @@ function App() {
             Drag and drop GPX files here to load them onto the map.
           </p>
         </div>
-        <MapWithGPX gpxTracks={gpxTracks} />
-        <ElevationProfile gpxTracks={gpxTracks} />
+        <MapWithGPX
+          gpxTracks={gpxTracks}
+          currentIndices={currentIndices}
+          setCurrentIndices={setCurrentIndices}
+          isPlaying={isPlaying}
+          setIsPlaying={setIsPlaying}
+        />
+        <ElevationProfile
+          gpxTracks={gpxTracks}
+          currentIndices={currentIndices}
+        />
       </div>
     </div>
   );

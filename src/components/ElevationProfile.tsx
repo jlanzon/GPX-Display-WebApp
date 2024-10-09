@@ -18,9 +18,13 @@ interface GPXTrack {
 
 interface ElevationProfileProps {
   gpxTracks: GPXTrack[];
+  currentIndices: { [key: number]: number };
 }
 
-const ElevationProfile: React.FC<ElevationProfileProps> = ({ gpxTracks }) => {
+const ElevationProfile: React.FC<ElevationProfileProps> = ({
+  gpxTracks,
+  currentIndices,
+}) => {
   const svgRef = useRef<SVGSVGElement | null>(null);
 
   useEffect(() => {
@@ -109,7 +113,29 @@ const ElevationProfile: React.FC<ElevationProfileProps> = ({ gpxTracks }) => {
       .attr("fill", "none")
       .attr("stroke", (track) => track.color)
       .attr("stroke-width", 2);
-  }, [gpxTracks]);
+
+    // Clear previous indicators
+    svg.selectAll(".current-indicator").remove();
+
+    // Add current position indicators
+    allData.forEach((track) => {
+      const currentIndex = currentIndices[track.id] ?? 0;
+      const currentDataPoint = track.data[currentIndex];
+
+      if (currentDataPoint) {
+        svg
+          .append("line")
+          .attr("class", "current-indicator")
+          .attr("x1", xScale(currentDataPoint.distance))
+          .attr("x2", xScale(currentDataPoint.distance))
+          .attr("y1", yScale.range()[0])
+          .attr("y2", yScale.range()[1])
+          .attr("stroke", track.color)
+          .attr("stroke-width", 2)
+          .attr("stroke-dasharray", "4");
+      }
+    });
+  }, [gpxTracks, currentIndices]); // Correct placement of dependency array
 
   // Helper function to calculate distance between two coordinates
   function calculateDistance(coord1: Coordinate, coord2: Coordinate): number {

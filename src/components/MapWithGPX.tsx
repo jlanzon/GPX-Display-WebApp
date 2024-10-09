@@ -32,6 +32,12 @@ interface GPXTrack {
 
 interface MapWithGPXProps {
   gpxTracks: GPXTrack[];
+  currentIndices: { [key: number]: number };
+  setCurrentIndices: React.Dispatch<
+    React.SetStateAction<{ [key: number]: number }>
+  >;
+  isPlaying: boolean;
+  setIsPlaying: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 // Fix for default icon issue with Leaflet and Vite
@@ -78,11 +84,13 @@ const PlaneIcon = L.divIcon({
   iconAnchor: [20, 20], // Adjust as needed
 });
 
-const MapWithGPX: React.FC<MapWithGPXProps> = ({ gpxTracks }) => {
-  const [currentIndices, setCurrentIndices] = useState<{
-    [key: number]: number;
-  }>({});
-  const [isPlaying, setIsPlaying] = useState<boolean>(false);
+const MapWithGPX: React.FC<MapWithGPXProps> = ({
+  gpxTracks,
+  currentIndices,
+  setCurrentIndices,
+  isPlaying,
+  setIsPlaying,
+}) => {
   const intervalRef = useRef<number | null>(null);
   const [bounds, setBounds] = useState<LatLngBounds | null>(null);
   const [sliderValue, setSliderValue] = useState(5);
