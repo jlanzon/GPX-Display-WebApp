@@ -4,7 +4,6 @@ import {
   MapContainer,
   TileLayer,
   Polyline,
-  Marker,
   Popup,
   useMap,
 } from "react-leaflet";
@@ -14,10 +13,20 @@ import "./MapWithGPX.css";
 import L, { LatLngBounds } from "leaflet";
 import "leaflet/dist/leaflet.css";
 
+import Slider from "@mui/material/Slider";
+import RotatingMarker from "./RotatingMarker";
+
+// Define the Coordinate interface
+interface Coordinate {
+  lat: number;
+  lng: number;
+  ele: number;
+}
+
 interface GPXTrack {
   id: number;
   name: string;
-  coordinates: L.LatLngTuple[];
+  coordinates: Coordinate[];
   color: string;
 }
 
@@ -28,8 +37,6 @@ interface MapWithGPXProps {
 // Fix for default icon issue with Leaflet and Vite
 import markerIcon from "leaflet/dist/images/marker-icon.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
-import Slider from "@mui/material/Slider";
-import RotatedMarker from "./RotatingMarker";
 
 const DefaultIcon = L.icon({
   iconUrl: markerIcon,
@@ -96,7 +103,7 @@ const MapWithGPX: React.FC<MapWithGPXProps> = ({ gpxTracks }) => {
     if (gpxTracks.length > 0) {
       const allCoordinates = gpxTracks.flatMap((track) => track.coordinates);
       const latLngs = allCoordinates.map((coord) =>
-        L.latLng(coord[0], coord[1])
+        L.latLng(coord.lat, coord.lng)
       );
       const newBounds = L.latLngBounds(latLngs);
       setBounds(newBounds);
@@ -147,7 +154,7 @@ const MapWithGPX: React.FC<MapWithGPXProps> = ({ gpxTracks }) => {
 
           return newIndices;
         });
-      }, sliderValue); // I will add a slider for the user later
+      }, sliderValue);
     } else if (intervalRef.current !== null) {
       clearInterval(intervalRef.current);
     }
@@ -174,18 +181,14 @@ const MapWithGPX: React.FC<MapWithGPXProps> = ({ gpxTracks }) => {
   };
 
   const handleSliderChange = (e: any, newValue: any) => {
-    // console.log(e.target.value);
     setSliderValue(newValue);
   };
-
-  // console.log(currentIndices[track.id]);
 
   return (
     <div className="w-full">
       <MapContainer
         className="h-96 w-full rounded shadow-2xl"
         zoom={6}
-        // center is uk by default
         center={[54.0, -2.0]}
       >
         <MapEffect />
@@ -195,25 +198,34 @@ const MapWithGPX: React.FC<MapWithGPXProps> = ({ gpxTracks }) => {
         />
         {gpxTracks.map((track) => {
           const currentIndex = currentIndices[track.id] ?? 0;
-          const position = track.coordinates[currentIndex];
+          const positionCoord = track.coordinates[currentIndex];
+          const position: L.LatLngTuple = [
+            positionCoord.lat,
+            positionCoord.lng,
+          ];
 
           let rotationAngle = 0;
 
           if (currentIndex > 0) {
-            const prevPosition = track.coordinates[currentIndex - 1];
+            const prevPositionCoord = track.coordinates[currentIndex - 1];
             rotationAngle = calculateBearing(
-              prevPosition[0],
-              prevPosition[1],
-              position[0],
-              position[1]
+              prevPositionCoord.lat,
+              prevPositionCoord.lng,
+              positionCoord.lat,
+              positionCoord.lng
             );
           }
 
           return (
             <div key={track.id}>
-              <Polyline positions={track.coordinates} color={track.color} />
+              <Polyline
+                positions={track.coordinates.map(
+                  (coord) => [coord.lat, coord.lng] as L.LatLngTuple
+                )}
+                color={track.color}
+              />
               {track.coordinates.length > 0 && (
-                <RotatedMarker
+                <RotatingMarker
                   position={position}
                   icon={PlaneIcon}
                   rotationAngle={rotationAngle}
@@ -224,7 +236,7 @@ const MapWithGPX: React.FC<MapWithGPXProps> = ({ gpxTracks }) => {
                       <strong>{track.name}</strong>
                     </div>
                   </Popup>
-                </RotatedMarker>
+                </RotatingMarker>
               )}
             </div>
           );

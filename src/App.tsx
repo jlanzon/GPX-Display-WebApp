@@ -3,13 +3,21 @@ import React, { useState } from "react";
 import MapWithGPX from "./components/MapWithGPX";
 import L from "leaflet";
 import * as toGeoJSON from "@mapbox/togeojson";
-import { Feature, FeatureCollection } from "geojson";
-import { Slider } from "@mui/material";
+import { Feature, FeatureCollection, LineString } from "geojson";
+import ElevationProfile from "./components/ElevationProfile";
+
+// shoudl maybe move these into its own tpyes folder
+
+interface Coordinate {
+  lat: number;
+  lng: number;
+  ele: number;
+}
 
 interface GPXTrack {
   id: number;
   name: string;
-  coordinates: L.LatLngTuple[];
+  coordinates: Coordinate[];
   color: string;
 }
 
@@ -38,16 +46,27 @@ function App() {
           const gpxDoc = parser.parseFromString(gpxText, "application/xml");
           const geojson = toGeoJSON.gpx(gpxDoc) as FeatureCollection;
 
-          const coordinates: L.LatLngTuple[] = [];
+          // Update coordinates to use the Coordinate interface
+          const coordinates: Coordinate[] = [];
 
           (geojson.features as Feature[]).forEach((feature) => {
             if (feature.geometry.type === "LineString") {
-              (feature.geometry.coordinates as [number, number][]).forEach(
-                (coord) => {
-                  // Convert from [lng, lat] to [lat, lng]
-                  coordinates.push([coord[1], coord[0]]);
-                }
-              );
+              const lineString = feature.geometry as LineString;
+              // Coordinates are in the form [lng, lat, ele?]
+              const coords = lineString.coordinates as [
+                number,
+                number,
+                number?
+              ][];
+
+              coords.forEach((coord) => {
+                const [lng, lat, ele] = coord;
+                coordinates.push({
+                  lat: lat,
+                  lng: lng,
+                  ele: ele !== undefined ? ele : 0, // Default elevation to 0 if undefined
+                });
+              });
             }
           });
 
@@ -110,6 +129,7 @@ function App() {
           </p>
         </div>
         <MapWithGPX gpxTracks={gpxTracks} />
+        <ElevationProfile gpxTracks={gpxTracks} />
       </div>
     </div>
   );
