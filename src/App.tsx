@@ -1,9 +1,10 @@
 // src/App.tsx
-import React, { useState } from 'react';
-import MapWithGPX from './MapWithGPX';
-import L from 'leaflet';
-import * as toGeoJSON from '@mapbox/togeojson';
-import { Feature, FeatureCollection } from 'geojson';
+import React, { useState } from "react";
+import MapWithGPX from "./components/MapWithGPX";
+import L from "leaflet";
+import * as toGeoJSON from "@mapbox/togeojson";
+import { Feature, FeatureCollection } from "geojson";
+import { Slider } from "@mui/material";
 
 interface GPXTrack {
   id: number;
@@ -12,7 +13,7 @@ interface GPXTrack {
   color: string;
 }
 
-const App: React.FC = () => {
+function App() {
   const [gpxTracks, setGpxTracks] = useState<GPXTrack[]>([]);
   const [nextTrackId, setNextTrackId] = useState<number>(1);
 
@@ -26,7 +27,7 @@ const App: React.FC = () => {
       const file = files[i];
 
       // Only process files with .gpx extension
-      if (file.name.endsWith('.gpx')) {
+      if (file.name.endsWith(".gpx")) {
         const reader = new FileReader();
 
         reader.onload = (e) => {
@@ -34,22 +35,24 @@ const App: React.FC = () => {
 
           // Parse the GPX data
           const parser = new DOMParser();
-          const gpxDoc = parser.parseFromString(gpxText, 'application/xml');
+          const gpxDoc = parser.parseFromString(gpxText, "application/xml");
           const geojson = toGeoJSON.gpx(gpxDoc) as FeatureCollection;
 
           const coordinates: L.LatLngTuple[] = [];
 
           (geojson.features as Feature[]).forEach((feature) => {
-            if (feature.geometry.type === 'LineString') {
-              (feature.geometry.coordinates as [number, number][]).forEach((coord) => {
-                // Convert from [lng, lat] to [lat, lng]
-                coordinates.push([coord[1], coord[0]]);
-              });
+            if (feature.geometry.type === "LineString") {
+              (feature.geometry.coordinates as [number, number][]).forEach(
+                (coord) => {
+                  // Convert from [lng, lat] to [lat, lng]
+                  coordinates.push([coord[1], coord[0]]);
+                }
+              );
             }
           });
 
           if (coordinates.length === 0) {
-            console.error('No track points found in the GPX file.');
+            console.error("No track points found in the GPX file.");
             alert(`No track data found in the GPX file: ${file.name}`);
             return;
           }
@@ -82,8 +85,8 @@ const App: React.FC = () => {
 
   // Function to generate a random color
   const getRandomColor = () => {
-    const letters = '0123456789ABCDEF';
-    let color = '#';
+    const letters = "0123456789ABCDEF";
+    let color = "#";
 
     // Generate color code
     for (let i = 0; i < 6; i++) {
@@ -99,15 +102,17 @@ const App: React.FC = () => {
       onDrop={handleFileDrop}
       onDragOver={handleDragOver}
     >
-      <h1 className="text-3xl font-bold mt-8 mb-4">GPX Map Player</h1>
+      <h1 className="text-3xl font-bold mt-8 mb-4">GPX Map Playerr</h1>
       <div className="w-full max-w-4xl px-4">
         <div className="mb-4 p-4 border-dashed border-2 border-gray-400 rounded bg-white text-center">
-          <p className="text-gray-700">Drag and drop GPX files here to load them onto the map.</p>
+          <p className="text-gray-700">
+            Drag and drop GPX files here to load them onto the map.
+          </p>
         </div>
         <MapWithGPX gpxTracks={gpxTracks} />
       </div>
     </div>
   );
-};
+}
 
 export default App;
