@@ -111,65 +111,6 @@ const ElevationProfile: React.FC<ElevationProfileProps> = ({ gpxTracks }) => {
       .attr("stroke-width", 2);
   }, [gpxTracks]);
 
-  // After creating axes, add labels
-  svg
-    .append("text")
-    .attr("text-anchor", "middle")
-    .attr(
-      "transform",
-      `translate(${margin.left / 2}, ${
-        (svgHeight - margin.top - margin.bottom) / 2
-      }) rotate(-90)`
-    )
-    .text("Elevation (m)");
-
-  svg
-    .append("text")
-    .attr("text-anchor", "middle")
-    .attr(
-      "transform",
-      `translate(${
-        (svgWidth - margin.left - margin.right) / 2 + margin.left
-      }, ${svgHeight - margin.bottom / 2})`
-    )
-    .text("Distance (km)");
-
-  // Add tooltips
-  const tooltip = d3
-    .select("body")
-    .append("div")
-    .attr("class", "tooltip")
-    .style("opacity", 0);
-
-  svg
-    .selectAll(".dot")
-    .data(
-      allData.flatMap((track) =>
-        track.data.map((d) => ({ ...d, color: track.color }))
-      )
-    )
-    .enter()
-    .append("circle")
-    .attr("class", "dot")
-    .attr("cx", (d) => xScale(d.distance))
-    .attr("cy", (d) => yScale(d.elevation))
-    .attr("r", 3)
-    .attr("fill", (d) => d.color)
-    .on("mouseover", function (event, d) {
-      tooltip.transition().duration(200).style("opacity", 0.9);
-      tooltip
-        .html(
-          `Distance: ${d.distance.toFixed(
-            2
-          )} km<br>Elevation: ${d.elevation.toFixed(2)} m`
-        )
-        .style("left", event.pageX + "px")
-        .style("top", event.pageY - 28 + "px");
-    })
-    .on("mouseout", function () {
-      tooltip.transition().duration(500).style("opacity", 0);
-    });
-
   // Helper function to calculate distance between two coordinates
   function calculateDistance(coord1: Coordinate, coord2: Coordinate): number {
     const R = 6371; // Earth radius in km
