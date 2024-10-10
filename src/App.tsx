@@ -1,25 +1,11 @@
-// src/App.tsx
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import MapWithGPX from "./components/MapWithGPX";
 import L from "leaflet";
 import * as toGeoJSON from "@mapbox/togeojson";
 import { Feature, FeatureCollection, LineString } from "geojson";
 import ElevationProfile from "./components/ElevationProfile";
-
-// shoudl maybe move these into its own tpyes folder
-
-interface Coordinate {
-  lat: number;
-  lng: number;
-  ele: number;
-}
-
-interface GPXTrack {
-  id: number;
-  name: string;
-  coordinates: Coordinate[];
-  color: string;
-}
+import "./App.css"; // Import the CSS file for styling
+import { GPXTrack, Coordinate } from "./types/types";
 
 function App() {
   const [gpxTracks, setGpxTracks] = useState<GPXTrack[]>([]);
@@ -48,35 +34,46 @@ function App() {
           // Parse the GPX data
           const parser = new DOMParser();
           const gpxDoc = parser.parseFromString(gpxText, "application/xml");
-          const geojson = toGeoJSON.gpx(gpxDoc) as FeatureCollection;
 
-          // Update coordinates to use the Coordinate interface
+          // Extract track points
+          const trkpts = gpxDoc.getElementsByTagName("trkpt");
+
           const coordinates: Coordinate[] = [];
 
-          (geojson.features as Feature[]).forEach((feature) => {
-            if (feature.geometry.type === "LineString") {
-              const lineString = feature.geometry as LineString;
-              // Coordinates are in the form [lng, lat, ele?]
-              const coords = lineString.coordinates as [
-                number,
-                number,
-                number?
-              ][];
+          for (let j = 0; j < trkpts.length; j++) {
+            const trkpt = trkpts[j];
+            const lat = parseFloat(trkpt.getAttribute("lat") || "0");
+            const lng = parseFloat(trkpt.getAttribute("lon") || "0");
 
-              coords.forEach((coord) => {
-                const [lng, lat, ele] = coord;
-                coordinates.push({
-                  lat: lat,
-                  lng: lng,
-                  ele: ele !== undefined ? ele : 0, // Default elevation to 0 if undefined
-                });
-              });
+            // Extract elevation
+            const eleElement = trkpt.getElementsByTagName("ele")[0];
+            const ele = eleElement
+              ? parseFloat(eleElement.textContent || "0")
+              : 0;
+
+            // Extract time
+            const timeElement = trkpt.getElementsByTagName("time")[0];
+            const time = timeElement
+              ? new Date(timeElement.textContent || "")
+              : undefined;
+
+            // Check for valid time
+            if (!time || isNaN(time.getTime())) {
+              console.warn(`Invalid time at point ${j} in file ${file.name}`);
+              continue; // Skip this point if time is invalid
             }
-          });
+
+            coordinates.push({
+              lat: lat,
+              lng: lng,
+              ele: ele,
+              time: time,
+            });
+          }
 
           if (coordinates.length === 0) {
-            console.error("No track points found in the GPX file.");
-            alert(`No track data found in the GPX file: ${file.name}`);
+            console.error("No valid track points found in the GPX file.");
+            alert(`No valid track data found in the GPX file: ${file.name}`);
             return;
           }
 
@@ -100,6 +97,13 @@ function App() {
       }
     }
   };
+  // useEffect(() => {
+  //   const newIndices: { [key: number]: number } = {};
+  //   gpxTracks.forEach((track) => {
+  //     newIndices[track.id] = -1; // Set to -1 to indicate the track hasn't started
+  //   });
+  //   setCurrentIndices(newIndices);
+  // }, [gpxTracks]);
 
   // Function to handle drag over
   const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
@@ -120,30 +124,56 @@ function App() {
   };
 
   return (
-    <div
-      className="flex flex-col items-center min-h-screen"
-      onDrop={handleFileDrop}
-      onDragOver={handleDragOver}
-    >
-      <h1 className="text-3xl font-bold mt-8 mb-4">GPX Map Playerr</h1>
-      <div className="w-full max-w-4xl px-4">
-        <div className="mb-4 p-4 border-dashed border-2 border-gray-400 rounded bg-white text-center">
-          <p className="text-gray-700">
-            Drag and drop GPX files here to load them onto the map.
-          </p>
-        </div>
-        <MapWithGPX
-          gpxTracks={gpxTracks}
-          currentIndices={currentIndices}
-          setCurrentIndices={setCurrentIndices}
-          isPlaying={isPlaying}
-          setIsPlaying={setIsPlaying}
-        />
-        <ElevationProfile
-          gpxTracks={gpxTracks}
-          currentIndices={currentIndices}
-        />
+    <div className="app-container">
+      {/* Navigation Bar */}
+      <nav className="navbar">
+        <h1 className="navbar-brand">GPX Map Player</h1>
+        {/* Add navigation links or menus here */}
+      </nav>
+
+      {/* Main Content Area with Sidebars */}
+      <div className="main-content">
+        {/* Left Sidebar */}
+        <aside className="sidebar left-sidebar">
+          {/* Add content for the left sidebar here */}
+          <p>Left Sidebar</p>
+        </aside>
+
+        {/* Center Content */}
+        <main className="content">
+          {/* Drag and Drop Area */}
+          <div
+            className="drop-area"
+            onDrop={handleFileDrop}
+            onDragOver={handleDragOver}
+          >
+            <p>Drag and drop GPX files here to load them onto the map.</p>
+          </div>
+
+          {/* Map and Elevation Profile */}
+          <MapWithGPX
+            gpxTracks={gpxTracks}
+            currentIndices={currentIndices}
+            setCurrentIndices={setCurrentIndices}
+            isPlaying={isPlaying}
+            setIsPlaying={setIsPlaying}
+          />
+          <ElevationProfile
+            gpxTracks={gpxTracks}
+            currentIndices={currentIndices}
+          />
+        </main>
+
+        {/* Right Sidebar */}
+        <aside className="sidebar right-sidebar">
+          <p>Right Sidebar</p>
+        </aside>
       </div>
+
+      {/* Footer */}
+      <footer className="footer">
+        <p>&copy; {new Date().getFullYear()} JLanzon GPX Mapping</p>
+      </footer>
     </div>
   );
 }

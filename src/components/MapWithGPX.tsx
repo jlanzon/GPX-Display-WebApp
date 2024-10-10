@@ -1,4 +1,3 @@
-// src/MapWithGPX.tsx
 import React, { useEffect, useState, useRef } from "react";
 import {
   MapContainer,
@@ -9,36 +8,11 @@ import {
 } from "react-leaflet";
 import planeIcon from "../assets/plane.png";
 import "./MapWithGPX.css";
-
 import L, { LatLngBounds } from "leaflet";
 import "leaflet/dist/leaflet.css";
-
-import Slider from "@mui/material/Slider";
 import RotatingMarker from "./RotatingMarker";
-
-// Define the Coordinate interface
-interface Coordinate {
-  lat: number;
-  lng: number;
-  ele: number;
-}
-
-interface GPXTrack {
-  id: number;
-  name: string;
-  coordinates: Coordinate[];
-  color: string;
-}
-
-interface MapWithGPXProps {
-  gpxTracks: GPXTrack[];
-  currentIndices: { [key: number]: number };
-  setCurrentIndices: React.Dispatch<
-    React.SetStateAction<{ [key: number]: number }>
-  >;
-  isPlaying: boolean;
-  setIsPlaying: React.Dispatch<React.SetStateAction<boolean>>;
-}
+import Slider from "@mui/material/Slider";
+import { GPXTrack } from "../types/types";
 
 // Fix for default icon issue with Leaflet and Vite
 import markerIcon from "leaflet/dist/images/marker-icon.png";
@@ -84,6 +58,16 @@ const PlaneIcon = L.divIcon({
   iconAnchor: [20, 20], // Adjust as needed
 });
 
+interface MapWithGPXProps {
+  gpxTracks: GPXTrack[];
+  currentIndices: { [key: number]: number };
+  setCurrentIndices: React.Dispatch<
+    React.SetStateAction<{ [key: number]: number }>
+  >;
+  isPlaying: boolean;
+  setIsPlaying: React.Dispatch<React.SetStateAction<boolean>>;
+}
+
 const MapWithGPX: React.FC<MapWithGPXProps> = ({
   gpxTracks,
   currentIndices,
@@ -93,7 +77,14 @@ const MapWithGPX: React.FC<MapWithGPXProps> = ({
 }) => {
   const intervalRef = useRef<number | null>(null);
   const [bounds, setBounds] = useState<LatLngBounds | null>(null);
-  const [sliderValue, setSliderValue] = useState(5);
+  const [progress, setProgress] = useState(0);
+  const availableSpeeds = [0.25, 0.5, 1, 2, 4, 8];
+  const [playbackSpeed, setPlaybackSpeed] = useState(1); // Default to 1x speed
+  const [currentTime, setCurrentTime] = useState<Date | null>(null);
+  const [earliestTime, setEarliestTime] = useState<Date | null>(null);
+  const [latestTime, setLatestTime] = useState<Date | null>(null);
+
+  const INTERVAL_DURATION = 100; // milliseconds
 
   const MapEffect = () => {
     const map = useMap();
@@ -107,89 +98,137 @@ const MapWithGPX: React.FC<MapWithGPXProps> = ({
     return null;
   };
 
+  const updateCurrentIndices = (newTime: Date) => {
+    console.log(`Current Time: ${newTime.toISOString()}`);
+    const newIndices: { [key: number]: number } = {};
+
+    gpxTracks.forEach((track) => {
+      let index = -1;
+      for (let i = 0; i < track.coordinates.length; i++) {
+        const coordTime = track.coordinates[i].time.getTime();
+        if (coordTime <= newTime.getTime()) {
+          index = i;
+        } else {
+          break;
+        }
+      }
+      console.log(`Track ID: ${track.id}, Current Index: ${index}`);
+      newIndices[track.id] = index;
+    });
+
+    setCurrentIndices(newIndices);
+
+    // Update progress based on time
+    if (earliestTime && latestTime) {
+      const totalDuration = latestTime.getTime() - earliestTime.getTime();
+      const elapsed = newTime.getTime() - earliestTime.getTime();
+      const progressPercentage = (elapsed / totalDuration) * 100;
+      setProgress(progressPercentage);
+    }
+  };
+
+  useEffect(() => {
+    if (gpxTracks.length === 0) return;
+
+    // Flatten all times from all tracks
+    const allTimes = gpxTracks.flatMap((track) =>
+      track.coordinates.map((coord) => coord.time.getTime())
+    );
+
+    // Determine earliest and latest times
+    const minTime = new Date(Math.min(...allTimes));
+    const maxTime = new Date(Math.max(...allTimes));
+
+    setEarliestTime(minTime);
+    setLatestTime(maxTime);
+    setCurrentTime(minTime);
+  }, [gpxTracks]);
+
+  // Update currentIndices whenever currentTime changes
+  useEffect(() => {
+    if (currentTime) {
+      updateCurrentIndices(currentTime);
+    }
+  }, [currentTime]);
+
   useEffect(() => {
     if (gpxTracks.length > 0) {
-      const allCoordinates = gpxTracks.flatMap((track) => track.coordinates);
-      const latLngs = allCoordinates.map((coord) =>
-        L.latLng(coord.lat, coord.lng)
-      );
-      const newBounds = L.latLngBounds(latLngs);
-      setBounds(newBounds);
-
-      // Initialise currentIndices for new tracks
-      const newIndices: { [key: number]: number } = {};
-      gpxTracks.forEach((track) => {
-        if (!(track.id in currentIndices)) {
-          newIndices[track.id] = 0;
-        } else {
-          newIndices[track.id] = currentIndices[track.id];
-        }
+      const displayedTracks = gpxTracks.filter((track) => {
+        const trackStartTime = track.coordinates[0].time;
+        return currentTime && currentTime >= trackStartTime;
       });
-      setCurrentIndices(newIndices);
+
+      if (displayedTracks.length > 0) {
+        const allCoordinates = displayedTracks.flatMap(
+          (track) => track.coordinates
+        );
+        const latLngs = allCoordinates.map((coord) =>
+          L.latLng(coord.lat, coord.lng)
+        );
+        const newBounds = L.latLngBounds(latLngs);
+        setBounds(newBounds);
+      } else {
+        // No tracks are currently being displayed
+        // Optionally, you could set bounds to some default area
+        const defaultBounds = L.latLngBounds([
+          [49.959999905, -7.57216793459],
+          [58.6350001085, 1.68153079591],
+        ]);
+        setBounds(defaultBounds);
+      }
     } else {
-      // If no tracks, reset bounds to UK
-      const ukBounds = L.latLngBounds([
+      // If no tracks, reset bounds to a default area
+      const defaultBounds = L.latLngBounds([
         [49.959999905, -7.57216793459],
         [58.6350001085, 1.68153079591],
       ]);
-      setBounds(ukBounds);
+      setBounds(defaultBounds);
     }
-  }, [gpxTracks]);
+  }, [gpxTracks, currentTime]);
 
   useEffect(() => {
-    if (isPlaying && gpxTracks.length > 0) {
-      intervalRef.current = window.setInterval(() => {
-        setCurrentIndices((prevIndices) => {
-          const newIndices = { ...prevIndices };
-          let anyTrackStillPlaying = false;
+    if (!isPlaying || !earliestTime || !latestTime) return;
 
-          gpxTracks.forEach((track) => {
-            const currentIndex = prevIndices[track.id] ?? 0;
-            if (currentIndex < track.coordinates.length - 1) {
-              newIndices[track.id] = currentIndex + 1;
-              anyTrackStillPlaying = true;
-            } else {
-              newIndices[track.id] = currentIndex;
-            }
-          });
+    intervalRef.current = window.setInterval(() => {
+      setCurrentTime((prevTime) => {
+        if (!prevTime) return null;
 
-          if (!anyTrackStillPlaying) {
-            if (intervalRef.current !== null) {
-              clearInterval(intervalRef.current);
-            }
-            setIsPlaying(false);
-          }
+        const timeIncrement = INTERVAL_DURATION * playbackSpeed * 10; // Adjust multiplier as needed
+        const newTime = new Date(prevTime.getTime() + timeIncrement);
 
-          return newIndices;
-        });
-      }, sliderValue);
-    } else if (intervalRef.current !== null) {
-      clearInterval(intervalRef.current);
-    }
+        if (newTime > latestTime) {
+          clearInterval(intervalRef.current!);
+          setIsPlaying(false);
+          return latestTime;
+        }
+
+        return newTime;
+      });
+    }, INTERVAL_DURATION);
 
     return () => {
-      if (intervalRef.current !== null) {
+      if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
     };
-  }, [isPlaying, gpxTracks, sliderValue]);
+  }, [isPlaying, playbackSpeed, earliestTime, latestTime]);
 
   const handlePlayPause = () => {
+    if (!isPlaying && currentTime && currentTime >= latestTime!) {
+      setCurrentTime(earliestTime);
+    }
     setIsPlaying((prev) => !prev);
   };
 
   const handleRestart = () => {
-    // Reset currentIndices
-    const resetIndices: { [key: number]: number } = {};
-    gpxTracks.forEach((track) => {
-      resetIndices[track.id] = 0;
-    });
-    setCurrentIndices(resetIndices);
+    setCurrentTime(earliestTime);
     setIsPlaying(false);
   };
 
-  const handleSliderChange = (e: any, newValue: any) => {
-    setSliderValue(newValue);
+  const handleSliderChange = (event: any, newValue: number | number[]) => {
+    const newTime = new Date(newValue as number);
+    setCurrentTime(newTime);
+    setIsPlaying(false); // Pause playback when slider is moved
   };
 
   return (
@@ -205,36 +244,58 @@ const MapWithGPX: React.FC<MapWithGPXProps> = ({
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         {gpxTracks.map((track) => {
-          const currentIndex = currentIndices[track.id] ?? 0;
-          const positionCoord = track.coordinates[currentIndex];
-          const position: L.LatLngTuple = [
-            positionCoord.lat,
-            positionCoord.lng,
-          ];
+          const trackStartTime = track.coordinates[0].time;
+          const trackEndTime =
+            track.coordinates[track.coordinates.length - 1].time;
 
-          let rotationAngle = 0;
+          const currentIndex = currentIndices[track.id];
+          let polyline = null;
+          let rotatingMarker = null;
 
-          if (currentIndex > 0) {
-            const prevPositionCoord = track.coordinates[currentIndex - 1];
-            rotationAngle = calculateBearing(
-              prevPositionCoord.lat,
-              prevPositionCoord.lng,
-              positionCoord.lat,
-              positionCoord.lng
+          // Only render the polyline if currentTime has reached the track's start time
+          if (currentTime && currentTime >= trackStartTime) {
+            // Render the polyline
+            const polylinePositions = track.coordinates.map(
+              (coord) => [coord.lat, coord.lng] as L.LatLngTuple
+            );
+
+            polyline = (
+              <Polyline positions={polylinePositions} color={track.color} />
             );
           }
 
-          const elevation = positionCoord.ele;
+          // Conditionally render the RotatingMarker (plane)
+          if (
+            currentIndex !== undefined &&
+            currentIndex >= 0 &&
+            currentIndex < track.coordinates.length
+          ) {
+            const positionCoord = track.coordinates[currentIndex];
 
-          return (
-            <div key={track.id}>
-              <Polyline
-                positions={track.coordinates.map(
-                  (coord) => [coord.lat, coord.lng] as L.LatLngTuple
-                )}
-                color={track.color}
-              />
-              {track.coordinates.length > 0 && (
+            // Only render the plane if the current time is within the track's time range
+            if (
+              currentTime &&
+              currentTime >= trackStartTime &&
+              currentTime <= trackEndTime
+            ) {
+              const position: L.LatLngTuple = [
+                positionCoord.lat,
+                positionCoord.lng,
+              ];
+
+              let rotationAngle = 0;
+              if (currentIndex > 0) {
+                const prevPositionCoord = track.coordinates[currentIndex - 1];
+                rotationAngle = calculateBearing(
+                  prevPositionCoord.lat,
+                  prevPositionCoord.lng,
+                  positionCoord.lat,
+                  positionCoord.lng
+                );
+              }
+              const elevationInFeet = positionCoord.ele * 3.28084;
+
+              rotatingMarker = (
                 <RotatingMarker
                   position={position}
                   icon={PlaneIcon}
@@ -245,11 +306,20 @@ const MapWithGPX: React.FC<MapWithGPXProps> = ({
                     <div>
                       <strong>{track.name}</strong>
                       <br />
-                      Elevation: {elevation.toFixed(2)} m
+                      Elevation: {elevationInFeet.toFixed(2)} ft
+                      <br />
+                      Time: {positionCoord.time.toISOString()}
                     </div>
                   </Popup>
                 </RotatingMarker>
-              )}
+              );
+            }
+          }
+
+          return (
+            <div key={track.id}>
+              {polyline}
+              {rotatingMarker}
             </div>
           );
         })}
@@ -267,16 +337,33 @@ const MapWithGPX: React.FC<MapWithGPXProps> = ({
         >
           Restart
         </button>
+        {/* Speed Control Buttons */}
+        {availableSpeeds.map((speed) => (
+          <button
+            key={speed}
+            onClick={() => setPlaybackSpeed(speed)}
+            className={`px-4 py-2 rounded focus:outline-none ${
+              playbackSpeed === speed
+                ? "bg-green-500 text-white"
+                : "bg-gray-300 text-gray-800 hover:bg-gray-400"
+            }`}
+          >
+            {speed}x
+          </button>
+        ))}
       </div>
+      {/* Progress Bar */}
       <Slider
-        defaultValue={5}
-        aria-label="speed slider"
-        value={sliderValue}
+        value={
+          currentTime ? currentTime.getTime() : earliestTime?.getTime() || 0
+        }
+        min={earliestTime?.getTime() || 0}
+        max={latestTime?.getTime() || 1000}
         onChange={handleSliderChange}
-        marks
-        min={0}
-        max={100}
         valueLabelDisplay="auto"
+        valueLabelFormat={(value) =>
+          new Date(value).toISOString().substr(11, 8)
+        } // Format as HH:MM:SS
       />
     </div>
   );

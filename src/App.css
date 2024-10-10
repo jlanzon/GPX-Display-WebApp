@@ -1,0 +1,73 @@
+/* src/App.css */
+
+/* Reset default margin and padding */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* App container */
+.app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Navigation Bar */
+.navbar {
+  background-color: #333;
+  color: #fff;
+  padding: 1rem;
+}
+
+.navbar-brand {
+  margin: 0;
+}
+
+/* Main Content Area */
+.main-content {
+  flex: 1;
+  display: flex;
+}
+
+/* Sidebars */
+.sidebar {
+  width: 200px;
+  background-color: #f4f4f4;
+  padding: 1rem;
+}
+
+.left-sidebar {
+  border-right: 1px solid #ccc;
+}
+
+.right-sidebar {
+  border-left: 1px solid #ccc;
+}
+
+/* Content Area */
+.content {
+  flex: 1;
+  padding: 1rem;
+}
+
+/* Footer */
+.footer {
+  background-color: #333;
+  color: #fff;
+  text-align: center;
+  padding: 0.5rem;
+}
+
+/* Drag and Drop Area */
+.drop-area {
+  border: 2px dashed #ccc;
+  padding: 1rem;
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.drop-area p {
+  color: #666;
+}
