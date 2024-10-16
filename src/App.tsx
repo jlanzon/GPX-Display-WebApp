@@ -7,8 +7,8 @@ function App() {
   return (
     <div className="app-container">
       <Routes>
-        <Route path="/GPX-Display-WebApp/" element={<Home />} />
-        <Route path="/GPX-Display-WebApp/gpx" element={<GPXPage />} />
+        <Route path="/GPX-Display-WebApp/" element={<GPXPage />} />
+        {/* <Route path="/GPX-Display-WebApp/gpx" element={<GPXPage />} /> */}
       </Routes>
 
       <footer className="footer bottom-0 absolute w-[100vw]">
