@@ -4,7 +4,7 @@ function NavBar() {
       <div className="container mx-auto flex flex-wrap items-center justify-between">
         <a href="/GPX-Display-WebApp/" className="flex">
           <span className="text-xl font-semibold whitespace-nowrap">
-            Mission Support center GPX Map Player
+            Mission Support Center GPX Map Player
           </span>
         </a>
         <div className="flex md:order-2"></div>
