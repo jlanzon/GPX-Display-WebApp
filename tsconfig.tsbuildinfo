@@ -1,1 +1,1 @@
-{"root":["./src/app.tsx","./src/mapwithgpx.tsx","./src/main.tsx","./src/togeojson.d.ts","./src/vite-env.d.ts"],"version":"5.6.2"}
+{"root":["./src/app.tsx","./src/main.tsx","./src/togeojson.d.ts","./src/vite-env.d.ts","./src/pages/gpxpage.tsx","./src/pages/home.tsx","./src/components/elevationprofile/elevationprofile.tsx","./src/components/layout/layouts.tsx","./src/components/mapwithgpx/mapwithgpx.tsx","./src/components/mapwithgpx/rotatingmarker.tsx","./src/components/navbar/navbar.tsx","./src/types/types.ts"],"errors":true,"version":"5.6.2"}

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import * as d3 from "d3";
 import { NumberValue } from "d3-scale";
-import { Coordinate, GPXTrack } from "../types/types"; // Ensure this path is correct
+import { Coordinate, GPXTrack } from "../../types/types"; // Ensure this path is correct
 
 interface TrackDataPoint {
   time: Date;

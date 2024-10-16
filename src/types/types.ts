@@ -10,3 +10,10 @@ export interface GPXTrack {
   coordinates: Coordinate[];
   color: string;
 }
+
+export interface CustomMarker {
+  id: number;
+  name: string;
+  lat: number;
+  lng: number;
+}
