@@ -180,7 +180,7 @@ function GPXPage() {
       setMarkerLat("");
       setMarkerLng("");
     } else {
-      alert("What am I surposed to place onto the map??");
+      alert("What am I supposed to place on the map??");
     }
   };
 
