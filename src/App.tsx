@@ -11,9 +11,11 @@ function App() {
         {/* <Route path="/GPX-Display-WebApp/gpx" element={<GPXPage />} /> */}
       </Routes>
 
-      <footer className="footer bottom-0 absolute w-[100vw]">
+{/*       Footer is fucked up */}
+
+{/*       <footer className="footer bottom-0 absolute w-[100vw]">
         <p>&copy; {new Date().getFullYear()} JLanzon GPX Mapping</p>
-      </footer>
+      </footer> */}
     </div>
   );
 }
