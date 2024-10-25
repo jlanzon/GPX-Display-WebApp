@@ -1,7 +1,7 @@
 function NavBar() {
   return (
-    <nav className="bg-white border-b border-gray-200 px-4 py-2">
-      <div className="container mx-auto flex flex-wrap items-center justify-between">
+    <div className="bg-white border-b border-gray-200 px-4 py-2">
+      <div className="flex flex-wrap items-center justify-between">
         <a href="/GPX-Display-WebApp/" className="flex">
           <span className="text-xl font-semibold whitespace-nowrap">
             Mission Support Center GPX Map Player
@@ -9,7 +9,7 @@ function NavBar() {
         </a>
         <div className="flex md:order-2"></div>
         <div className="w-full md:flex md:w-auto md:order-1">
-          <ul className="flex flex-col mt-4 md:flex-row md:space-x-8 md:mt-0">
+          <ul className="flex flex-col md:flex-row md:space-x-8 md:mt-0">
             <li>
               <a
                 href="/GPX-Display-WebApp/"
@@ -29,7 +29,7 @@ function NavBar() {
           </ul>
         </div>
       </div>
-    </nav>
+    </div>
   );
 }
 
